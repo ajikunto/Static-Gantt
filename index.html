@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>DHTMLXGantt</title>
+    <meta name="description" content="Somple fully independent Gantt Chart">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" type="image/png" href="/favicon.ico">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="./font-awesome/css/all.min.css">
+
+    <!-- Gantt Style -->
+    <style>
+    .gantt_button {
+        width: auto;
+        transition: background-color 0.3s ease;
+        margin: 1px;
+    }
+
+    .gantt_button:hover {
+        background-color: #f7eb91;
+    }
+
+    .gantt_task_line.gantt_dependent_task {
+        background-color: #65c16f;
+        border: 1px solid #3c9445;
+    }
+
+    .gantt_task_line.gantt_dependent_task .gantt_task_progress {
+        background-color: #46ad51;
+    }
+
+    .hide_project_progress_drag .gantt_task_progress_drag {
+        visibility: hidden;
+    }
+
+    .gantt_task_progress {
+        text-align: left;
+        padding-left: 10px;
+        box-sizing: border-box;
+        color: white;
+        font-weight: bold;
+    }
+
+    html,
+    body {
+        padding: 0px;
+        margin: 0px;
+        height: 100%;
+    }
+
+    .status_line {
+        background-color: #0ca30a;
+    }
+
+    .red .gantt_cell,
+    .odd.red .gantt_cell,
+    .red .gantt_task_cell,
+    .odd.red .gantt_task_cell {
+        background-color: #FDE0E0;
+    }
+
+    .green .gantt_cell,
+    .odd.green .gantt_cell,
+    .green .gantt_task_cell,
+    .odd.green .gantt_task_cell {
+        background-color: #BEE4BE;
+    }
+
+    .weekend {
+        background: #f4f7f4;
+    }
+
+    .gantt_selected .weekend {
+        background: #f7eb91;
+    }
+
+    .complete_button {
+        margin-top: 1px;
+        width: 20px;
+    }
+
+    .dhx_btn_set.complete_button_set {
+        background: #ACCAAC;
+        color: #454545;
+        border: 1px solid #94AD94;
+    }
+
+    .completed_task {
+        border: 1px solid #94AD94;
+    }
+
+    .completed_task .gantt_task_progress {
+        background: #ACCAAC;
+    }
+
+    .dhtmlx-completed {
+        border-color: #669e60;
+    }
+
+    .dhtmlx-completed div {
+        background: #81c97a;
+    }
+
+    /* hide progress drag in projects and objectives */
+    .project-task .gantt_task_progress_drag,
+    .phase-task .gantt_task_progress_drag {
+        display: none !important;
+    }
+
+    /* hide 'plus' buttons for tasks */
+    .regular-task .gantt_add {
+        display: none;
+    }
+    </style>
+
+    <!-- Modal style -->
+    <style>
+        /* Style untuk modal */
+        #fileIcon {
+        cursor: pointer;
+        }
+        #myModal {
+          display: none;
+          position: fixed;
+          z-index: 1;
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: 100%;
+          overflow: auto;
+          background-color: rgba(0, 0, 0, 0.5);
+        }
+    
+        /* Style untuk konten modal */
+        .modal-content {
+          background-color: #fefefe;
+          margin: 15% auto;
+          padding: 20px;
+          border: 1px solid #888;
+          width: 80%;
+        }
+    
+        /* Style untuk tombol tutup modal */
+        .close {
+          color: #aaa;
+          float: right;
+          font-size: 28px;
+          font-weight: bold;
+        }
+    
+        .close:hover,
+        .close:focus {
+          color: black;
+          text-decoration: none;
+          cursor: pointer;
+        }
+      </style>
+</head>
+
+<body>
+    <!-- DHTMLXGantt source -->
+    <script src="./gantt/dhtmlxgantt.js"></script>
+    <link rel="stylesheet" href="./gantt/dhtmlxgantt.css" type="text/css">
+    <link rel="stylesheet" href="./gantt/skins/dhtmlxgantt_broadway.css?v=8.0.3">
+
+    <!-- HEADER -->
+    <header>
+        <div class="header">
+            <!-- You Logo Here -->
+            <br>
+            <h4>PROJECT SCHEDULING
+            <!-- Icon untuk menampilkan tooltip -->
+            <span id="fileIcon" onclick="openModal()"><i class="far fa-question-circle"></i></span>
+            </h4>
+        </div>
+        <br>
+    </header>
+
+    <!-- CONTENT -->
+
+    <section>
+        <div>
+            <button value="Undo" class="gantt_button" title="Undo the change" type="button" onclick='gantt.undo()'><i
+                    class="fas fa-undo"></i></button>
+            <button value="Redo" class="gantt_button" title="Redo the change" type="button" onclick='gantt.redo()'><i
+                    class="fas fa-redo"></i></button>
+            <button class='zoom_toggle gantt_button' title="Zoom to Fit" onclick="toggleMode(this)"><i
+                    class="fas fa-search"></i>Fit All</button>
+            <button type=button class="gantt_button" title="Zoom In" value="Zoom In" onclick="zoomIn();"><i
+                    class="fas fa-search-minus"></i> In</button>
+            <button type=button class="gantt_button" title="Zoom Out" value="Zoom Out" onclick="zoomOut();"><i
+                    class="fas fa-search-plus"></i> Out</button>
+
+            <input type="radio" id="scale1" class="gantt_radio" name="scale" value="day">
+            <label for="scale1">Day</label>
+
+            <input type="radio" id="scale2" class="gantt_radio" name="scale" value="week">
+            <label for="scale2">Week</label>
+
+            <input type="radio" id="scale3" class="gantt_radio" name="scale" value="month" checked>
+            <label for="scale3">Month</label>
+
+            <input type="radio" id="scale4" class="gantt_radio" name="scale" value="quarter">
+            <label for="scale4">Quarter</label>
+
+            <input type="radio" id="scale5" class="gantt_radio" name="scale" value="year">
+            <label for="scale5">Year</label>
+
+            <button value="Export to PDF" title="Export to PDF" type="button" class="gantt_button"
+                onclick='gantt.exportToPDF()'><i class="far fa-file-pdf"></i></button>
+            <button value="Export to PNG" title="Export to PNG" type="button" class="gantt_button"
+                onclick='gantt.exportToPNG()'><i class="far fa-image"></i></button>
+            <button value="Export to Excel" title="Export to Excel" type="button" class="gantt_button"
+                onclick='gantt.exportToExcel()'><i class="far fa-file-excel"></i></button>
+
+        </div>
+        <br>
+        <div id="gantt_here" style='width:100%; height:80vh;'></div>
+
+    </section>
+    <!-- Modal -->
+    <div id="myModal" class="modal">
+        <!-- Konten modal -->
+        <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <pre id="fileContent"></pre>
+        </div>
+    </div>
+    <!-- FOOTER: -->
+
+    <footer>
+        <!-- Footer here -->
+    </footer>
+
+    <!-- SCRIPTS -->
+
+    <script>
+        // Fungsi untuk membuka modal
+        function openModal() {
+          readFileContent('readme.txt')
+            .then(data => {
+              document.getElementById('fileContent').textContent = data;
+              document.getElementById('myModal').style.display = 'block';
+            })
+            .catch(error => {
+              console.error('Error:', error);
+            });
+        }
+      
+        // Fungsi untuk menutup modal
+        function closeModal() {
+          document.getElementById('myModal').style.display = 'none';
+        }
+      
+        // Menutup modal jika pengguna mengklik di luar modal
+        window.onclick = function(event) {
+          var modal = document.getElementById('myModal');
+          if (event.target === modal) {
+            modal.style.display = 'none';
+          }
+        };
+      
+        // Fungsi untuk membaca isi file teks
+        function readFileContent(file) {
+          return fetch(file)
+            .then(response => response.text())
+            .catch(error => {
+              console.error('Error:', error);
+            });
+        }
+      </script>
+
+    <script>
+    gantt.config.date_format = "%Y-%m-%d %H:%i";
+
+    var cachedSettings = {};
+
+    function saveConfig() {
+        var config = gantt.config;
+        cachedSettings = {};
+        cachedSettings.scales = config.scales;
+        cachedSettings.start_date = config.start_date;
+        cachedSettings.end_date = config.end_date;
+        cachedSettings.scroll_position = gantt.getScrollState();
+    }
+
+    function restoreConfig() {
+        applyConfig(cachedSettings);
+    }
+
+    function applyConfig(config, dates) {
+
+        gantt.config.scales = config.scales;
+
+        // restore the previous scroll position
+        if (config.scroll_position) {
+            setTimeout(function() {
+                gantt.scrollTo(config.scroll_position.x, config.scroll_position.y)
+            }, 4)
+        }
+    }
+
+
+    function zoomToFit() {
+        var project = gantt.getSubtaskDates(),
+            areaWidth = gantt.$task.offsetWidth,
+            scaleConfigs = zoomConfig.levels;
+
+        for (var i = 0; i < scaleConfigs.length; i++) {
+            var columnCount = getUnitsBetween(project.start_date, project.end_date, scaleConfigs[i].scales[scaleConfigs[
+                i].scales.length - 1].unit, scaleConfigs[i].scales[0].step);
+            if ((columnCount + 2) * gantt.config.min_column_width <= areaWidth) {
+                break;
+            }
+        }
+
+
+        if (i == scaleConfigs.length) {
+            i--;
+        }
+
+        gantt.ext.zoom.setLevel(scaleConfigs[i].name);
+        applyConfig(scaleConfigs[i], project);
+    }
+
+    // get number of columns in timeline
+    function getUnitsBetween(from, to, unit, step) {
+        var start = new Date(from),
+            end = new Date(to);
+        var units = 0;
+        while (start.valueOf() < end.valueOf()) {
+            units++;
+            start = gantt.date.add(start, step, unit);
+        }
+        return units;
+    }
+    var zoomConfig = {
+        levels: [
+            // hours
+            {
+                name: "hour",
+                scale_height: 27,
+                scales: [{
+                        unit: "day",
+                        step: 1,
+                        format: "%d %M"
+                    },
+                    {
+                        unit: "hour",
+                        step: 1,
+                        format: "%H:%i"
+                    },
+                ]
+            },
+            // days
+            {
+                name: "day",
+                scale_height: 27,
+                scales: [{
+                    unit: "day",
+                    step: 1,
+                    format: "%d %M"
+                }]
+            },
+            // weeks
+            {
+                name: "week",
+                scale_height: 50,
+                scales: [{
+                        unit: "week",
+                        step: 1,
+                        format: function(date) {
+                            var dateToStr = gantt.date.date_to_str("%d %M");
+                            var endDate = gantt.date.add(date, -6, "day");
+                            var weekNum = gantt.date.date_to_str("%W")(date);
+                            return "#" + weekNum + ", " + dateToStr(date) + " - " + dateToStr(endDate);
+                        }
+                    },
+                    {
+                        unit: "day",
+                        step: 1,
+                        format: "%j %D"
+                    }
+                ]
+            },
+            // months
+            {
+                name: "month",
+                scale_height: 50,
+                scales: [{
+                        unit: "month",
+                        step: 1,
+                        format: "%F, %Y"
+                    },
+                    {
+                        unit: "week",
+                        step: 1,
+                        format: function(date) {
+                            var dateToStr = gantt.date.date_to_str("%d %M");
+                            var endDate = gantt.date.add(gantt.date.add(date, 1, "week"), -1, "day");
+                            return dateToStr(date) + " - " + dateToStr(endDate);
+                        }
+                    }
+                ]
+            },
+            // quarters
+            {
+                name: "quarter",
+                height: 50,
+                scales: [{
+                        unit: "quarter",
+                        step: 3,
+                        format: function(date) {
+                            var dateToStr = gantt.date.date_to_str("%M %y");
+                            var endDate = gantt.date.add(gantt.date.add(date, 3, "month"), -1, "day");
+                            return dateToStr(date) + " - " + dateToStr(endDate);
+                        }
+                    },
+                    {
+                        unit: "month",
+                        step: 1,
+                        format: "%M"
+                    },
+                ]
+            },
+            // years
+            {
+                name: "year",
+                scale_height: 50,
+                scales: [{
+                    unit: "year",
+                    step: 5,
+                    format: function(date) {
+                        var dateToStr = gantt.date.date_to_str("%Y");
+                        var endDate = gantt.date.add(gantt.date.add(date, 5, "year"), -1, "day");
+                        return dateToStr(date) + " - " + dateToStr(endDate);
+                    }
+                }]
+            },
+        ],
+        element: function() {
+            return gantt.$root.querySelector(".gantt_task");
+        }
+    };
+
+    gantt.config.fit_tasks = true;
+    gantt.ext.zoom.init(zoomConfig);
+    gantt.ext.zoom.setLevel("month");
+    gantt.$zoomToFit = false;
+    gantt.ext.zoom.attachEvent("onAfterZoom", function(level, config) {
+        document.querySelector(".gantt_radio[value='" + config.name + "']").checked = true;
+    })
+
+
+    function zoomIn() {
+        gantt.ext.zoom.zoomIn();
+    }
+
+    function zoomOut() {
+        gantt.ext.zoom.zoomOut()
+    }
+
+    var radios = document.getElementsByName("scale");
+    for (var i = 0; i < radios.length; i++) {
+        radios[i].onclick = function(event) {
+            gantt.ext.zoom.setLevel(event.target.value);
+        };
+    }
+
+    //Highlight weekend
+    gantt.templates.scale_cell_class = function(date) {
+        if (date.getDay() == 0 || date.getDay() == 6) {
+            return "weekend";
+        }
+    };
+    gantt.templates.timeline_cell_class = function(item, date) {
+        if (date.getDay() == 0 || date.getDay() == 6) {
+            return "weekend"
+        }
+    };
+
+
+    gantt.plugins({
+        marker: true,
+        export_api: true,
+        undo: true
+    });
+    var dateToStr = gantt.date.date_to_str(gantt.config.task_date);
+    var today = new Date();
+    gantt.addMarker({
+        start_date: today,
+        css: "today",
+        text: "Today",
+        title: "Today: " + dateToStr(today)
+    });
+
+    /* zoom */
+
+    function toggleMode(toggle) {
+        gantt.$zoomToFit = !gantt.$zoomToFit;
+        if (gantt.$zoomToFit) {
+            toggle.innerHTML = "<i class='fas fa-search'></i>Reset";
+            //Saving previous scale state for future restore
+            saveConfig();
+            zoomToFit();
+        } else {
+
+            toggle.innerHTML = "<i class='fas fa-search'></i>Fit All";
+            //Restore previous scale state
+            restoreConfig();
+            gantt.render();
+        }
+    }
+
+    var cachedSettings = {};
+
+    function saveConfig() {
+        var config = gantt.config;
+        cachedSettings = {};
+        cachedSettings.scales = config.scales;
+        cachedSettings.start_date = config.start_date;
+        cachedSettings.end_date = config.end_date;
+        cachedSettings.scroll_position = gantt.getScrollState();
+    }
+
+    function restoreConfig() {
+        applyConfig(cachedSettings);
+    }
+
+    function applyConfig(config, dates) {
+
+        gantt.config.scales = config.scales;
+
+        // restore the previous scroll position
+        if (config.scroll_position) {
+            setTimeout(function() {
+                gantt.scrollTo(config.scroll_position.x, config.scroll_position.y)
+            }, 4)
+        }
+    }
+
+
+    function zoomToFit() {
+        var project = gantt.getSubtaskDates(),
+            areaWidth = gantt.$task.offsetWidth,
+            scaleConfigs = zoomConfig.levels;
+
+        for (var i = 0; i < scaleConfigs.length; i++) {
+            var columnCount = getUnitsBetween(project.start_date, project.end_date, scaleConfigs[i].scales[
+                scaleConfigs[i].scales.length - 1].unit, scaleConfigs[i].scales[0].step);
+            if ((columnCount + 2) * gantt.config.min_column_width <= areaWidth) {
+                break;
+            }
+        }
+
+
+        if (i == scaleConfigs.length) {
+            i--;
+        }
+
+        gantt.ext.zoom.setLevel(scaleConfigs[i].name);
+        applyConfig(scaleConfigs[i], project);
+    }
+
+    // get number of columns in timeline
+    function getUnitsBetween(from, to, unit, step) {
+        var start = new Date(from),
+            end = new Date(to);
+        var units = 0;
+        while (start.valueOf() < end.valueOf()) {
+            units++;
+            start = gantt.date.add(start, step, unit);
+        }
+        return units;
+    }
+
+    /* On loaded */
+    document.addEventListener("DOMContentLoaded", function() {
+
+        var textEditor = {
+            type: "text",
+            map_to: "text"
+        };
+        var dateEditor = {
+            type: "date",
+            map_to: "start_date",
+        };
+        var durationEditor = {
+            type: "number",
+            map_to: "duration",
+            min: 0,
+            max: 100
+        };
+
+        gantt.config.columns = [{
+                name: "text",
+                tree: true,
+                width: 200,
+                resize: true,
+                editor: textEditor
+            },
+            {
+                name: "start_date",
+                align: "center",
+                width: 90,
+                resize: true,
+                editor: dateEditor
+            },
+            {
+                name: "duration",
+                align: "center",
+                width: 90,
+                resize: true,
+                editor: durationEditor
+            },
+            {
+                name: "add",
+                width: 44
+            }
+        ];
+
+        gantt.init("gantt_here");
+        gantt.parse({
+            data: [{
+                    id: 1,
+                    text: "Project #1",
+                    start_date: null,
+                    duration: null,
+                    parent: 0,
+                    progress: 0,
+                    open: true
+                },
+                {
+                    id: 2,
+                    text: "Task #1",
+                    start_date: "2024-01-01 00:00",
+                    duration: 5,
+                    parent: 1,
+                    progress: 1
+                },
+                {
+                    id: 3,
+                    text: "Task #2",
+                    start_date: "2024-01-06 00:00",
+                    duration: 2,
+                    parent: 1,
+                    progress: 0.5
+                },
+                {
+                    id: 4,
+                    text: "Task #3",
+                    start_date: null,
+                    duration: null,
+                    parent: 1,
+                    progress: 0.8,
+                    open: true
+                },
+                {
+                    id: 5,
+                    text: "Task #3.1",
+                    start_date: "2024-01-09 00:00",
+                    duration: 2,
+                    parent: 4,
+                    progress: 0.2
+                },
+                {
+                    id: 6,
+                    text: "Task #3.2",
+                    start_date: "2024-01-11 00:00",
+                    duration: 1,
+                    parent: 4,
+                    progress: 0
+                },
+                {
+                    id: 7,
+                    text: "Task #3.3",
+                    start_date: "2024-01-06 00:00",
+                    duration: 6,
+                    parent: 4,
+                    progress: 0.8
+                },
+                {
+                    id: 8,
+                    text: "Task #4",
+                    start_date: null,
+                    duration: null,
+                    parent: 1,
+                    progress: 0.8,
+                    open: true
+                },
+                {
+                    id: 9,
+                    text: "Task #4.1",
+                    start_date: "2024-01-19 00:00",
+                    duration: 2,
+                    parent: 8,
+                    progress: 0.2
+                },
+                {
+                    id: 10,
+                    text: "Task #4.2",
+                    start_date: "2024-01-28 00:00",
+                    duration: 10,
+                    parent: 8,
+                    progress: 0
+                }
+            ],
+            links: [{
+                    id: 1,
+                    source: 2,
+                    target: 3,
+                    type: "0"
+                },
+                {
+                    id: 2,
+                    source: 3,
+                    target: 4,
+                    type: "0"
+                },
+                {
+                    id: 3,
+                    source: 5,
+                    target: 6,
+                    type: "0"
+                }
+            ]
+        });
+
+        /* Style: */
+
+        //Auto type task/project    
+        gantt.config.auto_types = true;
+
+        //5 working days count
+        gantt.config.work_time = true;
+
+        //Tell the Gantt chart to automatically extend the time scale in order to fit all displayed tasks
+        gantt.config.fit_tasks = true;
+
+        //Tampilkan % progress task/project
+        gantt.templates.progress_text = function(start, end, task) {
+            return "<span style='text-align:left;'>" + Math.round(task.progress * 100) + "% </span>";
+        };
+
+        //Label task di sebelah kanan bar
+        gantt.templates.rightside_text = function(start, end, task) {
+            if (task.level == 0) {
+                return null;
+            } else {
+                return task.text + ' (' + task.duration + " days)";
+            }
+        };
+
+        // Hanya tampilkan text di bar untuk tugas utama
+        gantt.templates.task_text = function(start, end, task) {
+            if (task.level == 0) {
+                return task.text;
+            } else {
+                return null;
+            }
+        };
+
+        // recalculate progress of summary tasks when the progress of subtasks changes
+        (function dynamicProgress() {
+
+            function calculateSummaryProgress(task) {
+                if (task.type != gantt.config.types.project)
+                    return task.progress;
+                var totalToDo = 0;
+                var totalDone = 0;
+                gantt.eachTask(function(child) {
+                    if (child.type != gantt.config.types.project) {
+                        totalToDo += child.duration;
+                        totalDone += (child.progress || 0) * child.duration;
+                    }
+                }, task.id);
+                if (!totalToDo) return 0;
+                else return totalDone / totalToDo;
+            }
+
+            function refreshSummaryProgress(id, submit) {
+                if (!gantt.isTaskExists(id))
+                    return;
+
+                var task = gantt.getTask(id);
+                var newProgress = calculateSummaryProgress(task);
+
+                if (newProgress !== task.progress) {
+                    task.progress = newProgress;
+
+                    if (!submit) {
+                        gantt.refreshTask(id);
+                    } else {
+                        gantt.updateTask(id);
+                    }
+                }
+
+                if (!submit && gantt.getParent(id) !== gantt.config.root_id) {
+                    refreshSummaryProgress(gantt.getParent(id), submit);
+                }
+            }
+
+
+            gantt.attachEvent("onParse", function() {
+                gantt.eachTask(function(task) {
+                    task.progress = calculateSummaryProgress(task);
+                });
+            });
+
+            gantt.attachEvent("onAfterTaskUpdate", function(id) {
+                refreshSummaryProgress(gantt.getParent(id), true);
+            });
+
+            gantt.attachEvent("onTaskDrag", function(id) {
+                refreshSummaryProgress(gantt.getParent(id), false);
+            });
+            gantt.attachEvent("onAfterTaskAdd", function(id) {
+                refreshSummaryProgress(gantt.getParent(id), true);
+            });
+
+
+            (function() {
+                var idParentBeforeDeleteTask = 0;
+                gantt.attachEvent("onBeforeTaskDelete", function(id) {
+                    idParentBeforeDeleteTask = gantt.getParent(id);
+                });
+                gantt.attachEvent("onAfterTaskDelete", function() {
+                    refreshSummaryProgress(idParentBeforeDeleteTask, true);
+                });
+            })();
+        })();
+    });
+    </script>
+
+</body>
+
+</html>
